@@ -1,0 +1,27 @@
+{
+  "name": "@crm/platform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run test/unit",
+    "test:integration": "vitest run test/integration"
+  },
+  "dependencies": {
+    "@aws-sdk/client-kms": "3.1146.0",
+    "@crm/db": "workspace:*",
+    "@crm/domain": "workspace:*",
+    "drizzle-orm": "0.45.3",
+    "pino": "10.4.0"
+  }
+}
