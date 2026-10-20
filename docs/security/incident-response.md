@@ -1,0 +1,95 @@
+# Incident response runbook
+
+Owner: Compliance Officer / DPO. Applies to security incidents and **personal data breaches**
+under the Data Privacy Act (RA 10173) and NPC Circular 16-03.
+
+> The breach-management module (incident register with the 72-hour countdown) is a Phase 4
+> deliverable. Until then, keep the register below in the restricted incident folder and set
+> the deadlines from config (`privacy.breach_npc_notify_hours`,
+> `privacy.breach_full_report_days`). Both are **[CONFIRM with DPO]**.
+
+## 1. Detect and triage (T₀)
+
+Sources:
+
+- Security alerts (`/security/alerts`): `BREAK_GLASS`, `FAILED_LOGIN_BURST`,
+  `MALWARE_UPLOAD`, `LARGE_EXPORT`, `AUDIT_CHAIN_BROKEN`, `OFFBOARD_IDP_FAILED`.
+- WAF and CloudWatch alarms, staff reports, external reports.
+
+Steps:
+
+1. Open an incident record with the detection time, reporter and the systems involved.
+2. Assign an **Incident Lead** (Security) and the **DPO**. Start a private channel.
+3. Classify the severity:
+   - **SEV1:** confirmed exfiltration or unauthorised access to personal data, or loss of
+     audit integrity.
+   - **SEV2:** suspected access or a credential compromise.
+   - **SEV3:** blocked attack or no data involved.
+4. **Record the "knowledge / reasonable belief" timestamp (T_k).** The NPC 72-hour clock
+   starts here, not at detection.
+
+## 2. Contain (target: < 1 h for SEV1)
+
+| Situation                  | Action                                                                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compromised staff account  | `POST /users/:id/offboard` (revokes app sessions, disables the Keycloak user and logs out IdP sessions); rotate any secrets the user could see |
+| Compromised session cookie | Revoke the user's sessions (`/auth/sessions` or offboard); check the audit log for that `actor_id`                                             |
+| Malicious upload           | The document is already `INFECTED` and deleted; review other uploads by the same user                                                          |
+| Suspicious export          | Check `export.downloaded` events and watermarks; revoke the requester                                                                          |
+| Audit chain broken         | Freeze changes; compare the DB with the Object-Lock archive (JSONL is authoritative up to the last shipped seq); escalate as SEV1              |
+| Abused break-glass         | End the grant; review its audit trail by `request_id`                                                                                          |
+| Infrastructure             | Isolate tasks (scale the service to 0 or change the SG), keep evidence (snapshots, logs), block at the WAF                                     |
+
+## 3. Assess affected data and people
+
+Query the audit log by actor, subject, action and time window. Use an account with the
+Internal Auditor or Compliance role (`GET /api/v1/audit` or the Audit log page). These reads
+are themselves audited. Never use a database superuser.
+
+- `pii.reveal` and `document.download_url` events give the records actually viewed.
+- `export.downloaded` gives the bulk data that left the system (row counts are recorded).
+- `row.update` / `row.insert` on `contacts.*` give modifications.
+
+List the affected data subjects (people, companies) and data categories (contact details,
+IDs, TINs, bank, financials). Decide whether the breach is **notifiable**: sensitive personal
+information, or information enabling identity fraud, involved **and** a real risk of serious
+harm.
+
+## 4. Notify (NPC Circular 16-03)
+
+| Deadline (from T_k) | Action                                                                                                                                                                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **≤ 72 hours**      | Notify the **NPC** and the **affected data subjects** (unless an NPC exemption or postponement applies). Include the nature of the breach, the data involved, measures taken, and the DPO contact. |
+| **≤ 5 days**        | Full report to the NPC (if notification was given in parts) **[CONFIRM]**                                                                                                                          |
+| As agreed           | Inform tenants' authorised signatories; inform law enforcement when appropriate                                                                                                                    |
+
+Templates live in the restricted incident folder (Phase 4: generated by the breach module).
+
+## 5. Eradicate and recover
+
+Find and fix the root cause. Rotate the affected credentials (§7). Restore from PITR
+(RDS, 35 days) if data was altered; the RTO target is ≤ 4 h **[CONFIRM]**. Verify the audit
+chain, then return services to normal.
+
+## 6. Post-incident review (≤ 10 business days)
+
+Write a timeline, root cause and actions taken. Update the threat model, alerts, tests and
+this runbook. Report to management.
+
+## 7. Secret and key rotation
+
+| Secret                                                 | How to rotate                                                                                                                              |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| App field-encryption DEKs                              | Enqueue the `rotate-keys` job per purpose on the `maintenance` queue (re-encrypts, then retires old versions)                              |
+| KMS KEK                                                | Automatic annual rotation is on. On compromise, create a new CMK, update `KMS_KEY_ID`, and run `rotate-keys` for every purpose             |
+| OIDC client secrets (`leasing-staff`, `leasing-admin`) | Regenerate in Keycloak, update Secrets Manager, redeploy the API                                                                           |
+| DB role passwords                                      | `ALTER ROLE … PASSWORD`, update `database_url_*` secrets, redeploy the API and worker. The RDS master password rotates via Secrets Manager |
+| Redis AUTH                                             | Update the auth token (ElastiCache supports a rotate strategy), update `redis_url`, redeploy. All sessions end                             |
+| `IP_HASH_KEY`                                          | Replace the secret and redeploy. IP-correlation history restarts                                                                           |
+| Keycloak admin password                                | Change it in Keycloak; the console is reachable only from the admin allowlist                                                              |
+
+## 8. Drills
+
+Quarterly: run a restore drill (RDS PITR into an isolated environment, then verify the audit
+chain against the archive) and a table-top breach exercise using this runbook. Record results
+in the compliance folder.

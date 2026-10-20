@@ -6,7 +6,7 @@ skip-check:
   # Port 80 on the public ALB only issues a 301 to HTTPS.
   - CKV_AWS_260
   # Application secrets (DB URLs, OIDC secrets, keys) are rotated by the documented runbook
-  # (docs/security/incident-response.md#secret-rotation); RDS master password rotates natively.
+  # (docs/security/incident-response.md, section 7); RDS master password rotates natively.
   - CKV2_AWS_57
   # No consumer for S3 event notifications (scanning is queue-driven by the API).
   - CKV2_AWS_62
