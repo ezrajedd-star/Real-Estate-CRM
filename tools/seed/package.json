@@ -1,0 +1,20 @@
+{
+  "name": "@crm/seed",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Synthetic seed data for local/dev/staging. Never run against production.",
+  "scripts": {
+    "seed": "tsx seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crm/db": "workspace:*",
+    "@crm/domain": "workspace:*",
+    "@crm/platform": "workspace:*",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
+  }
+}

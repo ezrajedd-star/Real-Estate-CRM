@@ -1,0 +1,328 @@
+{
+  "realm": "pmo",
+  "displayName": "Company staff sign-in",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "quickLoginCheckMilliSeconds": 1000,
+  "minimumQuickLoginWaitSeconds": 60,
+  "passwordPolicy": "length(12) and notUsername and notEmail and passwordHistory(5) and passwordBlacklist(breached-passwords.txt)",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 900,
+  "ssoSessionMaxLifespan": 43200,
+  "offlineSessionIdleTimeout": 0,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyCodeReusable": false,
+  "webAuthnPolicyPasswordlessRpEntityName": "Leasing CRM",
+  "webAuthnPolicyPasswordlessUserVerificationRequirement": "required",
+  "webAuthnPolicyPasswordlessRequireResidentKey": "Yes",
+  "webAuthnPolicyRpEntityName": "Leasing CRM",
+  "webAuthnPolicyUserVerificationRequirement": "preferred",
+  "browserFlow": "browser-mfa",
+  "attributes": {
+    "acr.loa.map": "{\"pwd\":1,\"mfa\":2}"
+  },
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": true,
+      "priority": 10
+    },
+    {
+      "alias": "webauthn-register-passwordless",
+      "name": "Passkey registration",
+      "providerId": "webauthn-register-passwordless",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 20
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 30
+    },
+    {
+      "alias": "VERIFY_EMAIL",
+      "name": "Verify Email",
+      "providerId": "VERIFY_EMAIL",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 40
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "leasing-staff",
+      "name": "Commercial Leasing CRM (staff)",
+      "description": "BFF confidential client. Authorization roles are managed in the application, not here.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${LEASING_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": ["${WEB_ORIGIN}/api/v1/auth/callback"],
+      "webOrigins": ["${WEB_ORIGIN}"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${WEB_ORIGIN}/login?signedOut=1",
+        "acr.loa.map": "{\"pwd\":1,\"mfa\":2}",
+        "default.acr.values": "mfa",
+        "minimum.acr.value": "mfa",
+        "access.token.lifespan": "300",
+        "use.refresh.tokens": "false"
+      },
+      "defaultClientScopes": ["openid", "profile", "email", "acr", "basic"],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "residential-staff",
+      "name": "Residential Sales (future system)",
+      "description": "Reserved: the Residential Sales system will share this realm (SSO) with its own client and role set.",
+      "enabled": false,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "redirectUris": [],
+      "attributes": { "pkce.code.challenge.method": "S256", "minimum.acr.value": "mfa" }
+    },
+    {
+      "clientId": "leasing-admin",
+      "name": "Leasing CRM admin service account",
+      "description": "Client-credentials only: lets the leaver process disable users and end their IdP sessions.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${LEASING_ADMIN_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-leasing-admin",
+      "enabled": true,
+      "serviceAccountClientId": "leasing-admin",
+      "clientRoles": { "realm-management": ["manage-users", "view-users"] }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google Workspace",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "postBrokerLoginFlowAlias": "post-broker-mfa",
+      "config": {
+        "clientId": "${GOOGLE_CLIENT_ID}",
+        "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+        "hostedDomain": "${GOOGLE_HOSTED_DOMAIN}",
+        "syncMode": "IMPORT",
+        "defaultScope": "openid email profile",
+        "guiOrder": "1"
+      }
+    }
+  ],
+  "authenticatorConfig": [
+    { "alias": "loa-1", "config": { "loa-condition-level": "1", "loa-max-age": "43200" } },
+    { "alias": "loa-2", "config": { "loa-condition-level": "2", "loa-max-age": "0" } }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "browser-mfa",
+      "description": "Password (or Google) + mandatory second factor: passkey/WebAuthn preferred, TOTP fallback. No SMS.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false
+        },
+        {
+          "flowAlias": "browser-mfa forms",
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "autheticatorFlow": true
+        }
+      ]
+    },
+    {
+      "alias": "browser-mfa forms",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "flowAlias": "browser-mfa level 1",
+          "requirement": "CONDITIONAL",
+          "priority": 10,
+          "autheticatorFlow": true
+        },
+        {
+          "flowAlias": "browser-mfa level 2",
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "autheticatorFlow": true
+        }
+      ]
+    },
+    {
+      "alias": "browser-mfa level 1",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-level-of-authentication",
+          "authenticatorConfig": "loa-1",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "auth-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false
+        }
+      ]
+    },
+    {
+      "alias": "browser-mfa level 2",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-level-of-authentication",
+          "authenticatorConfig": "loa-2",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false
+        },
+        {
+          "flowAlias": "second factor",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": true
+        }
+      ]
+    },
+    {
+      "alias": "second factor",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "webauthn-authenticator",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false
+        }
+      ]
+    },
+    {
+      "alias": "post-broker-mfa",
+      "description": "After Google sign-in, still require a second factor held in this realm.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "flowAlias": "post-broker second factor",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": true
+        }
+      ]
+    },
+    {
+      "alias": "post-broker second factor",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "webauthn-authenticator",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false
+        }
+      ]
+    }
+  ],
+  "eventsEnabled": true,
+  "eventsExpiration": 7776000,
+  "enabledEventTypes": [
+    "LOGIN",
+    "LOGIN_ERROR",
+    "LOGOUT",
+    "CODE_TO_TOKEN_ERROR",
+    "UPDATE_TOTP",
+    "REMOVE_TOTP",
+    "UPDATE_PASSWORD",
+    "UPDATE_CREDENTIAL",
+    "REMOVE_CREDENTIAL",
+    "IDENTITY_PROVIDER_LOGIN",
+    "IDENTITY_PROVIDER_LOGIN_ERROR"
+  ],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": false,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en"],
+  "defaultLocale": "en"
+}

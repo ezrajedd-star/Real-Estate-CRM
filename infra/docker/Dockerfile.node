@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1.7
+# Builds one Node service (api | worker) from the monorepo.
+#   docker build -f infra/docker/Dockerfile.node --build-arg APP=api -t leasing-api .
+# Minimal runtime: non-root user, no shell tools beyond the slim base, read-only friendly.
+ARG NODE_IMAGE=node:22.12.0-bookworm-slim
+
+FROM ${NODE_IMAGE} AS build
+ARG APP
+WORKDIR /repo
+RUN corepack enable
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
+COPY packages ./packages
+COPY apps/${APP} ./apps/${APP}
+RUN pnpm install --frozen-lockfile --filter "@crm/${APP}..." \
+ && pnpm --filter "@crm/${APP}..." build \
+ && pnpm deploy --filter "@crm/${APP}" --prod --legacy /out \
+ && cp -r apps/${APP}/dist /out/dist \
+ && if [ -d packages/db/migrations ]; then cp -r packages/db/migrations /out/migrations; fi
+
+FROM ${NODE_IMAGE} AS runtime
+ENV NODE_ENV=production NODE_OPTIONS=--enable-source-maps
+WORKDIR /app
+COPY --from=build --chown=node:node /out /app
+USER node
+EXPOSE 4000
+CMD ["node", "dist/main.js"]

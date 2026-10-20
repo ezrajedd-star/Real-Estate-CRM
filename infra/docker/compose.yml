@@ -1,0 +1,121 @@
+# Local development stack: `pnpm infra:up` (then `pnpm db:migrate && pnpm db:seed`).
+# Synthetic, dev-only credentials come from ../../.env (copy .env.example). Nothing here is
+# used in staging/production, which run on AWS (see infra/terraform).
+name: leasing-crm
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  postgres:
+    <<: *restart
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      APP_DB_NAME: leasing
+      APP_MIGRATOR_PASSWORD: ${APP_MIGRATOR_PASSWORD:?set in .env}
+      APP_RW_PASSWORD: ${APP_RW_PASSWORD:?set in .env}
+      APP_WORKER_PASSWORD: ${APP_WORKER_PASSWORD:?set in .env}
+    ports: ['127.0.0.1:5432:5432']
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d leasing']
+      interval: 5s
+      retries: 20
+
+  redis:
+    <<: *restart
+    image: redis:7.4.1-alpine
+    command:
+      ['redis-server', '--requirepass', '${REDIS_PASSWORD:?set in .env}', '--appendonly', 'yes']
+    ports: ['127.0.0.1:6379:6379']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
+      interval: 5s
+
+  keycloak-db:
+    <<: *restart
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?set in .env}
+    volumes: [keycloak-db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U keycloak']
+      interval: 5s
+
+  keycloak:
+    <<: *restart
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: ['start-dev', '--import-realm', '--features=passkeys']
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set in .env}
+      KC_HEALTH_ENABLED: 'true'
+      # Placeholders substituted into the realm import (infra/keycloak/realm/pmo-realm.json)
+      LEASING_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?set in .env}
+      LEASING_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:?set in .env}
+      WEB_ORIGIN: ${PUBLIC_WEB_ORIGIN:-http://localhost:3000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-not-configured}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-not-configured}
+      GOOGLE_HOSTED_DOMAIN: ${GOOGLE_HOSTED_DOMAIN:-example.com}
+    ports: ['127.0.0.1:8080:8080']
+    volumes:
+      - ../keycloak/realm:/opt/keycloak/data/import:ro
+      - ../keycloak/password-blacklists:/opt/keycloak/data/password-blacklists:ro
+    depends_on:
+      keycloak-db: { condition: service_healthy }
+
+  minio:
+    <<: *restart
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?set in .env}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?set in .env}
+    ports: ['127.0.0.1:9000:9000', '127.0.0.1:9001:9001']
+    volumes: [minio-data:/data]
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+
+  # Creates the private document bucket (with CORS for presigned browser uploads) and the
+  # audit bucket with Object Lock in COMPLIANCE mode, mirroring production S3 settings.
+  minio-init:
+    image: minio/mc:RELEASE.2024-11-21T17-21-54Z
+    depends_on:
+      minio: { condition: service_healthy }
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+    entrypoint: ['/bin/sh', '/init/minio-init.sh']
+    volumes: [./minio:/init:ro]
+
+  clamav:
+    <<: *restart
+    image: clamav/clamav:1.4.1
+    ports: ['127.0.0.1:3310:3310']
+    healthcheck:
+      test: ['CMD', 'clamdcheck.sh']
+      interval: 30s
+      start_period: 120s
+
+  mailpit:
+    <<: *restart
+    image: axllent/mailpit:v1.21.8
+    ports: ['127.0.0.1:1025:1025', '127.0.0.1:8025:8025']
+
+volumes:
+  pg-data:
+  redis-data:
+  keycloak-db-data:
+  minio-data:
