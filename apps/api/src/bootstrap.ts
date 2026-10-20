@@ -25,6 +25,7 @@ export function createAdapter(): FastifyAdapter {
 export async function createApp(): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, createAdapter(), {
     logger: false,
+    abortOnError: false, // let startup errors reach main.ts, which logs them
   });
   await configureApp(app);
   return app;

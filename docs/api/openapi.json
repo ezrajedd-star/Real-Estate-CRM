@@ -1,0 +1,5133 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Commercial Leasing CRM API",
+    "version": "1.0.0",
+    "description": "Staff API. All routes are under /api/v1. PII is masked by default; reveals are audited."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-sid",
+        "description": "Server-side session cookie set by /auth/callback. State-changing requests also need the x-csrf-token header from /auth/me."
+      }
+    },
+    "schemas": {
+      "RoleGrant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "EXECUTIVE",
+              "LEASING_HEAD",
+              "LEASING_MANAGER",
+              "LEASING_OFFICER",
+              "BILLING_OFFICER",
+              "PROPERTY_OFFICER",
+              "FINANCE",
+              "COMPLIANCE_DPO",
+              "INTERNAL_AUDITOR"
+            ]
+          },
+          "scopeType": {
+            "type": "string",
+            "enum": [
+              "GLOBAL",
+              "PROPERTY",
+              "COMPANY"
+            ]
+          },
+          "scopeId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "grantedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "scopeType",
+          "scopeId",
+          "grantedAt"
+        ]
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleGrant"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "company.read",
+                "company.write",
+                "contact.read",
+                "contact.write",
+                "kyc.read",
+                "kyc.write",
+                "consent.write",
+                "privacy.manage",
+                "pii.reveal.tin",
+                "pii.reveal.gov_id",
+                "pii.reveal.bank",
+                "pii.reveal.contact",
+                "document.upload",
+                "document.read",
+                "document.read_sensitive",
+                "config.read",
+                "config.propose",
+                "config.approve",
+                "user.read",
+                "user.propose_role_change",
+                "user.approve_role_change",
+                "user.revoke_sessions",
+                "access_review.run",
+                "approval.read",
+                "audit.read",
+                "export.request",
+                "export.approve",
+                "import.run",
+                "property.read",
+                "property.write",
+                "system.integrations",
+                "break_glass.use",
+                "security.dashboard"
+              ]
+            }
+          },
+          "csrfToken": {
+            "type": "string"
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "idleExpiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "absoluteExpiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "authTime": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "amr": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "idleExpiresAt",
+              "absoluteExpiresAt",
+              "authTime",
+              "amr"
+            ]
+          },
+          "breakGlassUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "email",
+          "grants",
+          "permissions",
+          "csrfToken",
+          "session",
+          "breakGlassUntil"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "message"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "requestId"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "userAgent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "absoluteExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "current",
+          "createdAt",
+          "lastSeenAt",
+          "userAgent",
+          "absoluteExpiresAt"
+        ]
+      },
+      "UserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED",
+              "LEFT"
+            ]
+          },
+          "lastLoginAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleGrant"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "email",
+          "status",
+          "lastLoginAt",
+          "grants"
+        ]
+      },
+      "Approval": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ROLE_CHANGE",
+              "CONFIG_CHANGE",
+              "BULK_EXPORT"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "subjectType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subjectId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "makerId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "appliedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "canDecide": {
+            "type": "boolean"
+          },
+          "decisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stepIndex": {
+                  "type": "integer"
+                },
+                "deciderId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+                },
+                "decision": {
+                  "type": "string",
+                  "enum": [
+                    "APPROVE",
+                    "REJECT"
+                  ]
+                },
+                "comment": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "decidedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "stepIndex",
+                "deciderId",
+                "decision",
+                "comment",
+                "decidedAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "summary",
+          "subjectType",
+          "subjectId",
+          "makerId",
+          "status",
+          "createdAt",
+          "decidedAt",
+          "appliedAt",
+          "canDecide",
+          "decisions"
+        ]
+      },
+      "RoleChangeRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "GRANT"
+                ]
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "SUPER_ADMIN",
+                  "EXECUTIVE",
+                  "LEASING_HEAD",
+                  "LEASING_MANAGER",
+                  "LEASING_OFFICER",
+                  "BILLING_OFFICER",
+                  "PROPERTY_OFFICER",
+                  "FINANCE",
+                  "COMPLIANCE_DPO",
+                  "INTERNAL_AUDITOR"
+                ]
+              },
+              "scopeType": {
+                "type": "string",
+                "enum": [
+                  "GLOBAL",
+                  "PROPERTY",
+                  "COMPANY"
+                ]
+              },
+              "scopeId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "default": null,
+                "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+              },
+              "justification": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "action",
+              "role",
+              "scopeType",
+              "justification"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "REVOKE"
+                ]
+              },
+              "assignmentId": {
+                "type": "string",
+                "format": "uuid",
+                "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+              },
+              "justification": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "action",
+              "assignmentId",
+              "justification"
+            ]
+          }
+        ]
+      },
+      "OffboardRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "Why this access is needed (≥ 10 characters)"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "BreakGlassRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 15,
+            "maxLength": 500
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 120,
+            "default": 30
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "DecisionRequest": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVE",
+              "REJECT"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "ConfigValue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "key": {
+            "type": "string"
+          },
+          "scopeType": {
+            "type": "string",
+            "enum": [
+              "GLOBAL",
+              "PROPERTY",
+              "COMPANY"
+            ]
+          },
+          "scopeId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "value": {},
+          "effectiveFrom": {
+            "type": "string",
+            "description": "Business date (Asia/Manila)",
+            "example": "2026-11-01"
+          },
+          "effectiveTo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Business date (Asia/Manila)",
+            "example": "2026-11-01"
+          },
+          "needsConfirmation": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "scopeType",
+          "scopeId",
+          "effectiveFrom",
+          "effectiveTo",
+          "needsConfirmation",
+          "notes"
+        ]
+      },
+      "TaxRate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "taxType": {
+            "type": "string"
+          },
+          "rate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "0.120000"
+          },
+          "brackets": {},
+          "basis": {
+            "type": "string"
+          },
+          "sourceReference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "description": "Business date (Asia/Manila)",
+            "example": "2026-11-01"
+          },
+          "effectiveTo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Business date (Asia/Manila)",
+            "example": "2026-11-01"
+          },
+          "needsConfirmation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "taxType",
+          "rate",
+          "basis",
+          "sourceReference",
+          "effectiveFrom",
+          "effectiveTo",
+          "needsConfirmation"
+        ]
+      },
+      "FeatureFlag": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "key",
+          "enabled",
+          "description",
+          "updatedAt"
+        ]
+      },
+      "ConfigChangeRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "config_value"
+                ]
+              },
+              "key": {
+                "type": "string",
+                "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+              },
+              "scopeType": {
+                "type": "string",
+                "enum": [
+                  "GLOBAL",
+                  "PROPERTY",
+                  "COMPANY"
+                ],
+                "default": "GLOBAL"
+              },
+              "scopeId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "default": null,
+                "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+              },
+              "value": {},
+              "effectiveFrom": {
+                "type": "string",
+                "description": "Business date (Asia/Manila)",
+                "example": "2026-11-01"
+              },
+              "effectiveTo": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "default": null,
+                "description": "Business date (Asia/Manila)",
+                "example": "2026-11-01"
+              },
+              "confirmed": {
+                "type": "boolean",
+                "default": false
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 1000
+              },
+              "justification": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "kind",
+              "key",
+              "effectiveFrom",
+              "justification"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "tax_rate"
+                ]
+              },
+              "taxType": {
+                "type": "string",
+                "pattern": "^[A-Z0-9_]+$"
+              },
+              "rate": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^(0(\\.\\d{1,6})?|1(\\.0{1,6})?)$",
+                "default": null
+              },
+              "brackets": {},
+              "basis": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "sourceReference": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 500
+              },
+              "effectiveFrom": {
+                "type": "string",
+                "description": "Business date (Asia/Manila)",
+                "example": "2026-11-01"
+              },
+              "effectiveTo": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "default": null,
+                "description": "Business date (Asia/Manila)",
+                "example": "2026-11-01"
+              },
+              "confirmed": {
+                "type": "boolean",
+                "default": false
+              },
+              "justification": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "kind",
+              "taxType",
+              "basis",
+              "effectiveFrom",
+              "justification"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "feature_flag"
+                ]
+              },
+              "key": {
+                "type": "string",
+                "enum": [
+                  "invoicing",
+                  "online_payments",
+                  "portals",
+                  "ai_assist"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "justification": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "kind",
+              "key",
+              "enabled",
+              "justification"
+            ]
+          }
+        ]
+      },
+      "Property": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "address"
+        ]
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "legalName": {
+            "type": "string"
+          },
+          "tradeName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registrationType": {
+            "type": "string",
+            "enum": [
+              "SEC",
+              "DTI",
+              "CDA",
+              "GOVERNMENT",
+              "FOREIGN",
+              "OTHER"
+            ]
+          },
+          "registrationNo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tinMasked": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "•••-•••-•••-000"
+          },
+          "vatStatus": {
+            "type": "string",
+            "enum": [
+              "VAT",
+              "NON_VAT",
+              "VAT_EXEMPT",
+              "ZERO_RATED"
+            ]
+          },
+          "registeredAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "industry": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PROSPECT",
+              "TENANT",
+              "FORMER_TENANT",
+              "BLOCKED"
+            ]
+          },
+          "propertyIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            }
+          },
+          "kycStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+                },
+                "personId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+                },
+                "fullName": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "SIGNATORY",
+                    "BILLING_CONTACT",
+                    "GUARANTOR",
+                    "BENEFICIAL_OWNER",
+                    "OPERATIONS_CONTACT",
+                    "PRIMARY_CONTACT"
+                  ]
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "emailMasked": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "phoneMasked": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ownershipPct": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "description": "Business date (Asia/Manila)",
+                  "example": "2026-11-01"
+                },
+                "effectiveTo": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Business date (Asia/Manila)",
+                  "example": "2026-11-01"
+                }
+              },
+              "required": [
+                "id",
+                "personId",
+                "fullName",
+                "role",
+                "title",
+                "emailMasked",
+                "phoneMasked",
+                "ownershipPct",
+                "effectiveFrom",
+                "effectiveTo"
+              ]
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "legalName",
+          "tradeName",
+          "registrationType",
+          "registrationNo",
+          "tinMasked",
+          "vatStatus",
+          "registeredAddress",
+          "industry",
+          "status",
+          "propertyIds",
+          "kycStatus",
+          "createdAt",
+          "updatedAt",
+          "version"
+        ]
+      },
+      "CreateCompanyRequest": {
+        "type": "object",
+        "properties": {
+          "legalName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 300
+          },
+          "tradeName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "registrationType": {
+            "type": "string",
+            "enum": [
+              "SEC",
+              "DTI",
+              "CDA",
+              "GOVERNMENT",
+              "FOREIGN",
+              "OTHER"
+            ]
+          },
+          "registrationNo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 50
+          },
+          "tin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "123-456-789-000"
+          },
+          "vatStatus": {
+            "type": "string",
+            "enum": [
+              "VAT",
+              "NON_VAT",
+              "VAT_EXEMPT",
+              "ZERO_RATED"
+            ],
+            "default": "VAT"
+          },
+          "registeredAddress": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "industry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "propertyId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Required for property-scoped users: the property this company is a prospect/tenant for",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          }
+        },
+        "required": [
+          "legalName",
+          "registrationType"
+        ]
+      },
+      "UpdateCompanyRequest": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Optimistic-lock version from the last read"
+          },
+          "legalName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 300
+          },
+          "tradeName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "registrationType": {
+            "type": "string",
+            "enum": [
+              "SEC",
+              "DTI",
+              "CDA",
+              "GOVERNMENT",
+              "FOREIGN",
+              "OTHER"
+            ]
+          },
+          "registrationNo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 50
+          },
+          "tin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "123-456-789-000"
+          },
+          "vatStatus": {
+            "type": "string",
+            "enum": [
+              "VAT",
+              "NON_VAT",
+              "VAT_EXEMPT",
+              "ZERO_RATED"
+            ]
+          },
+          "registeredAddress": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "industry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PROSPECT",
+              "TENANT",
+              "FORMER_TENANT",
+              "BLOCKED"
+            ]
+          }
+        },
+        "required": [
+          "version"
+        ]
+      },
+      "RevealResponse": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revealedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "field",
+          "value",
+          "revealedAt"
+        ]
+      },
+      "RevealRequest": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "tin",
+              "gov_id",
+              "email",
+              "phone",
+              "bank_account"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "Why this access is needed (≥ 10 characters)"
+          }
+        },
+        "required": [
+          "field",
+          "reason"
+        ]
+      },
+      "Kyc": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_REVIEW",
+              "VERIFIED",
+              "REJECTED",
+              "EXPIRED"
+            ]
+          },
+          "riskRating": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ]
+          },
+          "hasFinancials": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reviewedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "reviewedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "nextReviewOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Business date (Asia/Manila)",
+            "example": "2026-11-01"
+          },
+          "version": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "companyId",
+          "status",
+          "riskRating",
+          "hasFinancials",
+          "notes",
+          "reviewedBy",
+          "reviewedAt",
+          "nextReviewOn",
+          "version"
+        ]
+      },
+      "UpsertKycRequest": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Optimistic-lock version from the last read"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_REVIEW",
+              "VERIFIED",
+              "REJECTED",
+              "EXPIRED"
+            ]
+          },
+          "riskRating": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "nextReviewOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Business date (Asia/Manila)",
+            "example": "2026-11-01"
+          },
+          "financialsSummary": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "Stored encrypted"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "BankAccount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "accountNoMasked": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "REFUND",
+              "OTHER"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "bankName",
+          "accountName",
+          "accountNoMasked",
+          "purpose",
+          "createdAt"
+        ]
+      },
+      "CreateBankAccountRequest": {
+        "type": "object",
+        "properties": {
+          "bankName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "accountName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "accountNo": {
+            "type": "string",
+            "pattern": "^[0-9 -]{6,30}$"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "REFUND",
+              "OTHER"
+            ],
+            "default": "REFUND"
+          }
+        },
+        "required": [
+          "bankName",
+          "accountName",
+          "accountNo"
+        ]
+      },
+      "Person": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "emailMasked": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phoneMasked": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "govIdType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "PASSPORT",
+              "DRIVERS_LICENSE",
+              "UMID",
+              "PHILSYS",
+              "PRC",
+              "POSTAL",
+              "TIN",
+              "OTHER"
+            ]
+          },
+          "govIdMasked": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nationality": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "emailMasked",
+          "phoneMasked",
+          "govIdType",
+          "govIdMasked",
+          "nationality",
+          "version"
+        ]
+      },
+      "CreatePersonRequest": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 254,
+            "format": "email"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\+?[0-9 ()-]{7,20}$"
+          },
+          "govIdType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "PASSPORT",
+              "DRIVERS_LICENSE",
+              "UMID",
+              "PHILSYS",
+              "PRC",
+              "POSTAL",
+              "TIN",
+              "OTHER"
+            ]
+          },
+          "govId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 4,
+            "maxLength": 40
+          },
+          "nationality": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "fullName"
+        ]
+      },
+      "PersonSearchRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          }
+        },
+        "description": "Sent in the body so PII never appears in URLs"
+      },
+      "Consent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "noticeId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "lawfulBasis": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "capturedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "capturedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          }
+        },
+        "required": [
+          "id",
+          "noticeId",
+          "purpose",
+          "lawfulBasis",
+          "action",
+          "channel",
+          "capturedAt",
+          "capturedBy"
+        ]
+      },
+      "CaptureConsentRequest": {
+        "type": "object",
+        "properties": {
+          "noticeId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "LEASE_ADMINISTRATION",
+              "BILLING_AND_COLLECTION",
+              "KYC_AML",
+              "MARKETING",
+              "TENANT_REMINDERS"
+            ]
+          },
+          "lawfulBasis": {
+            "type": "string",
+            "enum": [
+              "CONSENT",
+              "CONTRACT",
+              "LEGAL_OBLIGATION",
+              "LEGITIMATE_INTEREST"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "GRANTED",
+              "WITHDRAWN",
+              "ACKNOWLEDGED"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "PAPER",
+              "EMAIL",
+              "PORTAL",
+              "IN_PERSON",
+              "IMPORT"
+            ]
+          },
+          "evidenceDocumentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          }
+        },
+        "required": [
+          "noticeId",
+          "purpose",
+          "lawfulBasis",
+          "action",
+          "channel"
+        ]
+      },
+      "PrivacyNotice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "versionLabel": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "TENANT_CONTACT",
+              "BROKER",
+              "PROSPECT",
+              "STAFF"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "bodyMarkdown": {
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "description": "Business date (Asia/Manila)",
+            "example": "2026-11-01"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "versionLabel",
+          "audience",
+          "title",
+          "bodyMarkdown",
+          "effectiveFrom",
+          "publishedAt"
+        ]
+      },
+      "PublishNoticeRequest": {
+        "type": "object",
+        "properties": {
+          "versionLabel": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,40}$"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "TENANT_CONTACT",
+              "BROKER",
+              "PROSPECT",
+              "STAFF"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "bodyMarkdown": {
+            "type": "string",
+            "minLength": 50,
+            "maxLength": 100000
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "description": "Business date (Asia/Manila)",
+            "example": "2026-11-01"
+          }
+        },
+        "required": [
+          "versionLabel",
+          "audience",
+          "title",
+          "bodyMarkdown",
+          "effectiveFrom"
+        ]
+      },
+      "InitiateUploadResponse": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "PUT"
+            ]
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "documentId",
+          "uploadUrl",
+          "method",
+          "headers",
+          "expiresAt"
+        ]
+      },
+      "InitiateUploadRequest": {
+        "type": "object",
+        "properties": {
+          "ownerType": {
+            "type": "string",
+            "enum": [
+              "company",
+              "person",
+              "kyc_profile",
+              "import_batch",
+              "consent"
+            ]
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "companyId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "SEC_REGISTRATION",
+              "DTI_REGISTRATION",
+              "BIR_COR",
+              "BOARD_RESOLUTION",
+              "SECRETARY_CERTIFICATE",
+              "GOV_ID",
+              "FINANCIAL_STATEMENT",
+              "CONSENT_FORM",
+              "IMPORT_FILE",
+              "OTHER"
+            ]
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "GENERAL",
+              "SENSITIVE"
+            ],
+            "default": "GENERAL"
+          },
+          "originalName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ]
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "ownerType",
+          "ownerId",
+          "category",
+          "originalName",
+          "contentType",
+          "sizeBytes"
+        ]
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "companyId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "category": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "GENERAL",
+              "SENSITIVE"
+            ]
+          },
+          "originalName": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_UPLOAD",
+              "QUARANTINED",
+              "CLEAN",
+              "INFECTED",
+              "REJECTED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "ownerType",
+          "ownerId",
+          "companyId",
+          "category",
+          "classification",
+          "originalName",
+          "contentType",
+          "sizeBytes",
+          "status",
+          "createdAt"
+        ]
+      },
+      "DownloadUrl": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "url",
+          "expiresAt"
+        ]
+      },
+      "ImportBatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "importType": {
+            "type": "string",
+            "enum": [
+              "companies",
+              "contacts"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UPLOADED",
+              "VALIDATING",
+              "VALIDATED",
+              "COMMITTING",
+              "COMMITTED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "totalRows": {
+            "type": "integer"
+          },
+          "validRows": {
+            "type": "integer"
+          },
+          "errorRows": {
+            "type": "integer"
+          },
+          "failure": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "committedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "importType",
+          "status",
+          "totalRows",
+          "validRows",
+          "errorRows",
+          "failure",
+          "createdAt",
+          "committedAt"
+        ]
+      },
+      "CreateImportRequest": {
+        "type": "object",
+        "properties": {
+          "importType": {
+            "type": "string",
+            "enum": [
+              "companies",
+              "contacts"
+            ]
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          },
+          "propertyId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+          }
+        },
+        "required": [
+          "importType",
+          "documentId"
+        ]
+      },
+      "ImportPreview": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "$ref": "#/components/schemas/ImportBatch"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rowNumber": {
+                  "type": "integer"
+                },
+                "preview": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "description": "Row values with sensitive fields masked"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "field",
+                      "code",
+                      "message"
+                    ]
+                  }
+                },
+                "targetId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+                }
+              },
+              "required": [
+                "rowNumber",
+                "preview",
+                "errors",
+                "targetId"
+              ]
+            }
+          }
+        },
+        "required": [
+          "batch",
+          "rows"
+        ]
+      },
+      "CreateExportRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "companies"
+            ]
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "propertyId": {
+                "type": "string",
+                "format": "uuid",
+                "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              }
+            },
+            "default": {}
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "kind",
+          "justification"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/auth/me": {
+      "get": {
+        "summary": "Current user, permissions and CSRF token",
+        "tags": [
+          "auth"
+        ],
+        "description": "",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/sessions": {
+      "get": {
+        "summary": "My active sessions",
+        "tags": [
+          "auth"
+        ],
+        "description": "",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Sign out",
+        "tags": [
+          "auth"
+        ],
+        "description": "",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "List staff users",
+        "tags": [
+          "identity"
+        ],
+        "description": "Requires permission `user.read`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/role-changes": {
+      "post": {
+        "summary": "Request a role change (maker–checker)",
+        "tags": [
+          "identity"
+        ],
+        "description": "Requires permission `user.propose_role_change`. Requires recent re-authentication (step-up).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Approval"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/offboard": {
+      "post": {
+        "summary": "Leaver process: block access, revoke sessions",
+        "tags": [
+          "identity"
+        ],
+        "description": "Requires permission `user.revoke_sessions`. Requires recent re-authentication (step-up).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OffboardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/break-glass": {
+      "post": {
+        "summary": "Start emergency read access (alerts security)",
+        "tags": [
+          "identity"
+        ],
+        "description": "Requires permission `break_glass.use`. Requires recent re-authentication (step-up).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreakGlassRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/approvals": {
+      "get": {
+        "summary": "Approvals inbox",
+        "tags": [
+          "approvals"
+        ],
+        "description": "",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Approval"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/approvals/{id}/decision": {
+      "post": {
+        "summary": "Approve or reject",
+        "tags": [
+          "approvals"
+        ],
+        "description": "",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Approval"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/values": {
+      "get": {
+        "summary": "Effective-dated config values",
+        "tags": [
+          "config"
+        ],
+        "description": "Requires permission `config.read`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConfigValue"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/tax-rates": {
+      "get": {
+        "summary": "Effective-dated tax rates",
+        "tags": [
+          "config"
+        ],
+        "description": "Requires permission `config.read`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaxRate"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/feature-flags": {
+      "get": {
+        "summary": "Feature flags",
+        "tags": [
+          "config"
+        ],
+        "description": "",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeatureFlag"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/changes": {
+      "post": {
+        "summary": "Propose a config/rate/flag change (maker–checker)",
+        "tags": [
+          "config"
+        ],
+        "description": "Requires permission `config.propose`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Approval"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/properties": {
+      "get": {
+        "summary": "Properties in my scope",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `property.read`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Property"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies": {
+      "get": {
+        "summary": "Search companies in my scope",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `company.read`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": false,
+            "name": "propertyId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PROSPECT",
+                "TENANT",
+                "FORMER_TENANT",
+                "BLOCKED"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a company",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `company.write`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCompanyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}": {
+      "get": {
+        "summary": "Get a company (masked)",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `company.read`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a company",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `company.write`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCompanyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}/reveal": {
+      "post": {
+        "summary": "Reveal the TIN (reason required, audited)",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `pii.reveal.tin`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevealResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}/kyc": {
+      "put": {
+        "summary": "Create/update KYC profile",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `kyc.write`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertKycRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Kyc"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}/bank-accounts": {
+      "post": {
+        "summary": "Add a bank account (encrypted)",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `kyc.write`. Requires recent re-authentication (step-up).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBankAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people": {
+      "post": {
+        "summary": "Create a person",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `contact.write`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/search": {
+      "post": {
+        "summary": "Find people by email or name (body, never URL)",
+        "tags": [
+          "contacts"
+        ],
+        "description": "Requires permission `contact.read`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Person"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/{id}/consents": {
+      "post": {
+        "summary": "Record consent / acknowledgement",
+        "tags": [
+          "privacy"
+        ],
+        "description": "Requires permission `consent.write`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureConsentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/privacy-notices": {
+      "post": {
+        "summary": "Publish a privacy notice version",
+        "tags": [
+          "privacy"
+        ],
+        "description": "Requires permission `privacy.manage`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishNoticeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyNotice"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "post": {
+        "summary": "Start an upload (returns a 5-minute presigned PUT URL)",
+        "tags": [
+          "documents"
+        ],
+        "description": "Requires permission `document.upload`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitiateUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InitiateUploadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}/complete": {
+      "post": {
+        "summary": "Confirm upload; queues malware scan",
+        "tags": [
+          "documents"
+        ],
+        "description": "Requires permission `document.upload`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Document"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}/download-url": {
+      "post": {
+        "summary": "Issue a 5-minute download URL (audited)",
+        "tags": [
+          "documents"
+        ],
+        "description": "",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadUrl"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/imports": {
+      "post": {
+        "summary": "Create an Excel import from an uploaded workbook",
+        "tags": [
+          "imports"
+        ],
+        "description": "Requires permission `import.run`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/imports/{id}/validate": {
+      "post": {
+        "summary": "Validate rows and preview errors",
+        "tags": [
+          "imports"
+        ],
+        "description": "Requires permission `import.run`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/imports/{id}/commit": {
+      "post": {
+        "summary": "Commit a valid import (idempotent)",
+        "tags": [
+          "imports"
+        ],
+        "description": "Requires permission `import.run`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exports": {
+      "post": {
+        "summary": "Request a bulk export (needs approval)",
+        "tags": [
+          "exports"
+        ],
+        "description": "Requires permission `export.request`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exports/{id}/download": {
+      "post": {
+        "summary": "Download an approved export once (watermarked CSV)",
+        "tags": [
+          "exports"
+        ],
+        "description": "Requires permission `export.request`. Requires recent re-authentication (step-up).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "01928f1e-7c2a-7b3e-9a1d-3f4e5a6b7c8d"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in / step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not in your scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

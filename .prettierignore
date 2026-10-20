@@ -5,3 +5,4 @@ docs/brief.md
 **/coverage
 **/*.sql
 infra/terraform/**/.terraform
+docs/api/openapi.json

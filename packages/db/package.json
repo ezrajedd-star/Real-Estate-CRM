@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "migrate": "tsx src/cli/migrate.ts",
     "test": "vitest run --passWithNoTests test/unit",
-    "test:integration": "vitest run test/integration"
+    "test:integration": "vitest run test/integration",
+    "migrate:prod": "node dist/cli/migrate.js"
   },
   "dependencies": {
     "@crm/domain": "workspace:*",

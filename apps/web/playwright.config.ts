@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 import { E2E, serviceEnv } from './e2e/support/env';
 
@@ -17,9 +18,8 @@ export default defineConfig({
     baseURL: E2E.web,
     trace: 'retain-on-failure',
     ...devices['Desktop Chrome'],
-    launchOptions: {
-      executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
-    },
+    // Use a preinstalled Chromium when present (sandboxed dev boxes); CI installs its own.
+    launchOptions: chromiumPath() ? { executablePath: chromiumPath() } : {},
   },
   webServer: [
     {
@@ -48,3 +48,8 @@ export default defineConfig({
     },
   ],
 });
+
+function chromiumPath(): string | undefined {
+  const p = process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium';
+  return p && existsSync(p) ? p : undefined;
+}

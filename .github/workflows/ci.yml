@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  # Synthetic CI-only credentials for throwaway service containers.
+  POSTGRES_PASSWORD: ci_postgres
+  APP_MIGRATOR_PASSWORD: migrator_dev
+  APP_RW_PASSWORD: rw_dev
+  APP_WORKER_PASSWORD: worker_dev
+  DATABASE_URL_MIGRATOR: postgres://app_migrator:migrator_dev@localhost:5432/leasing
+  DATABASE_URL_APP: postgres://app_rw:rw_dev@localhost:5432/leasing
+  DATABASE_URL_WORKER: postgres://app_worker:worker_dev@localhost:5432/leasing
+  DATABASE_URL_SUPERUSER: postgres://postgres:ci_postgres@localhost:5432/leasing
+  REDIS_URL: redis://localhost:6379
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  static:
+    name: Lint, format, typecheck, unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter "./packages/**" build
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Unit tests (domain coverage ≥ 80 % enforced by vitest thresholds)
+        run: pnpm test
+      - name: OpenAPI spec is up to date
+        run: |
+          pnpm --filter @crm/api openapi
+          git diff --exit-code docs/api/openapi.json
+
+  integration:
+    name: Integration tests (Postgres RLS, API, worker)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16.4
+        env: { POSTGRES_PASSWORD: ci_postgres }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7.4.1
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter "./packages/**" build
+      - name: Bootstrap least-privilege roles and migrate
+        env: { PGHOST: localhost, PGPASSWORD: ci_postgres }
+        run: |
+          sudo apt-get install -y --no-install-recommends postgresql-client >/dev/null
+          bash infra/docker/postgres/init/01-roles.sh
+          pnpm db:migrate
+      - name: Migrations are immutable and re-runnable
+        run: pnpm db:migrate | grep -q "Applied 0 migration"
+      - run: pnpm test:integration
+
+  e2e:
+    name: End-to-end (Playwright, real OIDC flow)
+    runs-on: ubuntu-24.04
+    needs: [static]
+    services:
+      postgres:
+        image: postgres:16.4
+        env: { POSTGRES_PASSWORD: ci_postgres }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7.4.1
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter "./packages/**" build
+      - env: { PGHOST: localhost, PGPASSWORD: ci_postgres }
+        run: |
+          sudo apt-get install -y --no-install-recommends postgresql-client >/dev/null
+          bash infra/docker/postgres/init/01-roles.sh
+          pnpm db:migrate
+      - run: pnpm --filter @crm/api build && pnpm --filter @crm/web build
+      - run: pnpm --filter @crm/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @crm/web e2e
+        env: { PLAYWRIGHT_CHROMIUM_PATH: '' }
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: playwright-traces, path: apps/web/test-results, retention-days: 7 }
+
+  images:
+    name: Build and scan container images
+    runs-on: ubuntu-24.04
+    needs: [static]
+    strategy:
+      matrix:
+        include:
+          - { name: api, dockerfile: infra/docker/Dockerfile.node, args: 'APP=api' }
+          - { name: worker, dockerfile: infra/docker/Dockerfile.node, args: 'APP=worker' }
+          - { name: web, dockerfile: infra/docker/Dockerfile.web, args: '' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          build-args: ${{ matrix.args }}
+          tags: leasing-${{ matrix.name }}:ci
+          load: true
+          push: false
+      - name: Trivy image scan (fail on HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: leasing-${{ matrix.name }}:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'

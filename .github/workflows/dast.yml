@@ -1,0 +1,25 @@
+name: DAST (staging)
+
+# Run against staging before every production release (brief §8.6). Requires the
+# repository variable STAGING_URL and a deployed staging environment.
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zap-baseline:
+    runs-on: ubuntu-24.04
+    if: vars.STAGING_URL != ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ vars.STAGING_URL }}
+          rules_file_name: .zap/rules.tsv
+          fail_action: true
+          allow_issue_writing: true

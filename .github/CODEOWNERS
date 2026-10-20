@@ -1,0 +1,10 @@
+# Changes to auth, permissions, crypto, money and migrations need an extra security review
+# (brief §8.6). Replace @org/security-reviewers with your team handle.
+/packages/db/migrations/           @org/security-reviewers
+/packages/platform/src/crypto/     @org/security-reviewers
+/packages/domain/src/authz/        @org/security-reviewers
+/packages/domain/src/money/        @org/security-reviewers
+/apps/api/src/modules/auth/        @org/security-reviewers
+/apps/api/src/modules/identity/    @org/security-reviewers
+/infra/keycloak/                   @org/security-reviewers
+/infra/terraform/                  @org/security-reviewers
