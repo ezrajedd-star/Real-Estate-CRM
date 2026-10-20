@@ -12,7 +12,7 @@ export const EICAR = 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST
  * until a zero-length chunk and replies FOUND for the EICAR signature.
  */
 export async function startFakeClamd(
-  opts: { reply?: string } = {},
+  opts: { reply?: string; port?: number } = {},
 ): Promise<{ port: number; server: Server; requests: number }> {
   const state = { requests: 0 };
   const server = createServer((sock) => {
@@ -44,7 +44,7 @@ export async function startFakeClamd(
       }
     });
   });
-  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  await new Promise<void>((r) => server.listen(opts.port ?? 0, '127.0.0.1', r));
   return {
     port: (server.address() as AddressInfo).port,
     server,

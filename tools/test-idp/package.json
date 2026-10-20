@@ -1,0 +1,13 @@
+{
+  "name": "@crm/test-idp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TEST-ONLY OpenID Provider for local e2e runs without Keycloak. Never deploy.",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "oidc-provider": "9.12.2"
+  }
+}

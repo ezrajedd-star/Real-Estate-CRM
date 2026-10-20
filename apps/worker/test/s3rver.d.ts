@@ -6,7 +6,7 @@ declare module 's3rver' {
     address?: string;
     silent?: boolean;
     directory?: string;
-    configureBuckets?: Array<{ name: string }>;
+    configureBuckets?: Array<{ name: string; configs?: Array<string | Buffer> }>;
   }
   export default class S3rver {
     constructor(options: S3rverOptions);

@@ -3,7 +3,16 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/.next/**', '**/coverage/**', '**/node_modules/**', '**/*.config.*'],
+    ignores: [
+      '**/dist/**',
+      '**/.next/**',
+      '**/coverage/**',
+      '**/node_modules/**',
+      '**/*.config.*',
+      '**/next-env.d.ts',
+      '**/test-results/**',
+      '**/playwright-report/**',
+    ],
   },
   ...tseslint.configs.recommended,
   {

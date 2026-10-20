@@ -13,3 +13,5 @@ coverage/
 *.tfstate.*
 .DS_Store
 dump.rdb
+test-results/
+playwright-report/

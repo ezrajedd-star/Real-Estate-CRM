@@ -87,7 +87,8 @@ export class KeycloakOidcProvider extends OidcProvider {
     callbackUrl: URL,
     checks: { state: string; nonce: string; codeVerifier: string; maxAge?: number },
   ): Promise<OidcIdentity> {
-    const tokens = await oidc.authorizationCodeGrant(await this.configuration(), callbackUrl, {
+    const config = await this.configuration();
+    const tokens = await oidc.authorizationCodeGrant(config, callbackUrl, {
       expectedState: checks.state,
       expectedNonce: checks.nonce,
       pkceCodeVerifier: checks.codeVerifier,
@@ -96,8 +97,14 @@ export class KeycloakOidcProvider extends OidcProvider {
     });
     const claims = tokens.claims();
     if (!claims) throw new Error('No ID token');
-    const email = typeof claims.email === 'string' ? claims.email : '';
-    const name = typeof claims.name === 'string' ? claims.name : email;
+    let email = typeof claims.email === 'string' ? claims.email : '';
+    let name = typeof claims.name === 'string' ? claims.name : '';
+    if (!email || !name) {
+      // Some IdPs return profile claims only from userinfo; the subject must match the ID token.
+      const info = await oidc.fetchUserInfo(config, tokens.access_token, claims.sub);
+      email ||= typeof info.email === 'string' ? info.email : '';
+      name ||= typeof info.name === 'string' ? info.name : email;
+    }
     const amr = Array.isArray(claims.amr)
       ? claims.amr.filter((x): x is string => typeof x === 'string')
       : [];
