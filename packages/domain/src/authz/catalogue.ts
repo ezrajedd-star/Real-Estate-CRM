@@ -30,6 +30,7 @@ export const PERMISSIONS = [
   'kyc.read',
   'kyc.write',
   'consent.write',
+  'privacy.manage', // privacy notices, data-subject requests (DPO)
   // field-level reveals (always need a reason; always audited)
   'pii.reveal.tin',
   'pii.reveal.gov_id',
@@ -173,6 +174,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, readonly Permission[]>
     'user.revoke_sessions',
     'access_review.run',
     'security.dashboard',
+    'privacy.manage',
   ],
   // Read-only including audit logs; bulk PII export only via approval.
   INTERNAL_AUDITOR: [
