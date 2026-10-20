@@ -1,0 +1,8 @@
+pre-commit:
+  parallel: true
+  commands:
+    gitleaks:
+      run: gitleaks protect --staged --redact --no-banner
+    format:
+      glob: '*.{ts,tsx,js,mjs,json,md,yml,yaml}'
+      run: pnpm prettier --check {staged_files}
