@@ -1,0 +1,30 @@
+# Accepted findings, each with its reason. Review these at every phase's security checklist.
+skip-check:
+  # TLS terminates at the ALB; ALB→task traffic stays inside private subnets of one VPC.
+  # Re-evaluate (end-to-end TLS) before go-live if the pentest or policy requires it.
+  - CKV_AWS_378
+  # Port 80 on the public ALB only issues a 301 to HTTPS.
+  - CKV_AWS_260
+  # Application secrets (DB URLs, OIDC secrets, keys) are rotated by the documented runbook
+  # (docs/security/incident-response.md#secret-rotation); RDS master password rotates natively.
+  - CKV2_AWS_57
+  # No consumer for S3 event notifications (scanning is queue-driven by the API).
+  - CKV2_AWS_62
+  # Keycloak and the ClamAV sidecar must write to their filesystems; the Node services run
+  # with read-only roots.
+  - CKV_AWS_336
+  # Staging is single-AZ by design; production sets multi_az = true (RDS and Redis).
+  - CKV_AWS_157
+  - CKV2_AWS_50
+  # Security groups are attached in sibling modules; checkov cannot see across modules.
+  - CKV2_AWS_5
+  # OPEN ITEM: cross-region replication of the Object-Lock audit archive needs a locked
+  # destination bucket; tracked in docs/security/asvs-checklist-phase1.md (V7.3).
+  - CKV_AWS_144
+  # The replica and log buckets in the backup region log to nothing further (log of logs).
+  - CKV_AWS_18
+  # The access-log bucket must use SSE-S3: ALB log delivery does not support SSE-KMS.
+  - CKV_AWS_145
+  # AWSManagedRulesKnownBadInputsRuleSet (Log4j signatures) is attached at priority 30;
+  # the graph check does not resolve it through the module's ACL association.
+  - CKV2_AWS_76

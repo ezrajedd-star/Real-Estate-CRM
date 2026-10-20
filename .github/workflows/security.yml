@@ -73,11 +73,14 @@ jobs:
       - run: terraform -chdir=infra/terraform/environments/staging validate
       - run: terraform fmt -check -recursive infra/terraform
       - uses: terraform-linters/setup-tflint@v4
-      - run: tflint --chdir=infra/terraform --recursive
+      - run: tflint --init --config "$GITHUB_WORKSPACE/infra/terraform/.tflint.hcl"
+        env: { GITHUB_TOKEN: '${{ github.token }}' }
+      - run: tflint --recursive --chdir=infra/terraform --config "$GITHUB_WORKSPACE/infra/terraform/.tflint.hcl"
       - name: Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: infra/terraform
+          config_file: infra/terraform/.checkov.yaml
           framework: terraform
           quiet: true
           soft_fail: false
