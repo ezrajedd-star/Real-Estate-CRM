@@ -95,7 +95,12 @@ describe('redact', () => {
     const cyc: Record<string, unknown> = { a: 1 };
     cyc.self = cyc;
     const d = new Date(0);
-    const out = redact({ err, cyc, d, b: Buffer.from('secret') }) as Record<string, any>;
+    const out = redact({ err, cyc, d, b: Buffer.from('secret') }) as {
+      err: { message: string; cause: { message: string } };
+      cyc: { self: unknown };
+      d: Date;
+      b: string;
+    };
     expect(out.err.message).toBe('failed for [NUMBER]');
     expect(out.err.cause.message).not.toContain(PII.email);
     expect(out.cyc.self).toBe('[Circular]');
