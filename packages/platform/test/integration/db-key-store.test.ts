@@ -8,11 +8,7 @@ const workerUrl =
   process.env.DATABASE_URL_WORKER ?? 'postgres://app_worker:worker_dev@localhost:5432/leasing';
 const app = createDb(appUrl, { max: 2 });
 const worker = createDb(workerUrl, { max: 2 });
-const provider = new LocalKeyProvider(
-  randomBytes(32).toString('base64'),
-  `local:it-${randomBytes(4).toString('hex')}`,
-  'test',
-);
+const provider = new LocalKeyProvider(randomBytes(32).toString('base64'), 'test');
 
 afterAll(async () => {
   await app.close();

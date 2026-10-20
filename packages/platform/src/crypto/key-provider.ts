@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 import { DecryptCommand, EncryptCommand, KMSClient } from '@aws-sdk/client-kms';
 
 /**
@@ -12,20 +12,22 @@ export interface KeyProvider {
   unwrap(kekId: string, wrapped: string, context: Record<string, string>): Promise<Buffer>;
 }
 
-/** AES-256-GCM key wrap with a KEK held in process memory. Never for production. */
+/**
+ * AES-256-GCM key wrap with a KEK held in process memory. Never for production.
+ * The key id is a fingerprint of the KEK, so data keys wrapped under a different KEK fail
+ * with a clear "Unknown KEK" instead of an opaque authentication error.
+ */
 export class LocalKeyProvider implements KeyProvider {
   private readonly kek: Buffer;
+  readonly kekId: string;
 
-  constructor(
-    kekBase64: string,
-    readonly kekId = 'local:dev',
-    env: string | undefined = process.env.NODE_ENV,
-  ) {
+  constructor(kekBase64: string, env: string | undefined = process.env.NODE_ENV) {
     if (env === 'production') {
       throw new Error('LocalKeyProvider must not be used in production; configure AWS KMS');
     }
     this.kek = Buffer.from(kekBase64, 'base64');
     if (this.kek.length !== 32) throw new Error('Local KEK must be 32 bytes (base64-encoded)');
+    this.kekId = `local:${createHash('sha256').update(this.kek).digest('hex').slice(0, 12)}`;
   }
 
   async wrap(dek: Buffer, context: Record<string, string>): Promise<string> {
@@ -83,7 +85,6 @@ function canonicalContext(context: Record<string, string>): string {
 
 export function keyProviderFromEnv(env: NodeJS.ProcessEnv = process.env): KeyProvider {
   if (env.KMS_KEY_ID) return new AwsKmsKeyProvider(env.KMS_KEY_ID);
-  if (env.LOCAL_KEK_BASE64)
-    return new LocalKeyProvider(env.LOCAL_KEK_BASE64, 'local:dev', env.NODE_ENV);
+  if (env.LOCAL_KEK_BASE64) return new LocalKeyProvider(env.LOCAL_KEK_BASE64, env.NODE_ENV);
   throw new Error('Configure KMS_KEY_ID (production) or LOCAL_KEK_BASE64 (dev/test)');
 }

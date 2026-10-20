@@ -11,7 +11,7 @@ const aad = {
 
 function setup() {
   const store = new MemoryKeyStore();
-  const provider = new LocalKeyProvider(kek, 'local:test', 'test');
+  const provider = new LocalKeyProvider(kek, 'test');
   return { store, provider, cipher: new FieldCipher(provider, store) };
 }
 
@@ -80,7 +80,7 @@ describe('FieldCipher', () => {
     let t = 0;
     const store = new MemoryKeyStore();
     let unwraps = 0;
-    const provider = new LocalKeyProvider(kek, 'local:test', 'test');
+    const provider = new LocalKeyProvider(kek, 'test');
     const counting = {
       kekId: provider.kekId,
       wrap: provider.wrap.bind(provider),
@@ -122,23 +122,21 @@ describe('blind index', () => {
 
 describe('LocalKeyProvider', () => {
   it('refuses to run in production', () => {
-    expect(() => new LocalKeyProvider(kek, 'local:x', 'production')).toThrow(/production/);
+    expect(() => new LocalKeyProvider(kek, 'production')).toThrow(/production/);
   });
   it('requires a 32-byte KEK', () => {
-    expect(() => new LocalKeyProvider(randomBytes(16).toString('base64'), 'x', 'test')).toThrow(
+    expect(() => new LocalKeyProvider(randomBytes(16).toString('base64'), 'test')).toThrow(
       /32 bytes/,
     );
   });
   it('binds wrapped keys to their context and KEK id', async () => {
-    const p = new LocalKeyProvider(kek, 'local:test', 'test');
+    const p = new LocalKeyProvider(kek, 'test');
     const wrapped = await p.wrap(Buffer.alloc(32, 7), { purpose: 'tin', version: '1' });
-    await expect(
-      p.unwrap('local:test', wrapped, { purpose: 'bank', version: '1' }),
-    ).rejects.toThrow();
+    await expect(p.unwrap(p.kekId, wrapped, { purpose: 'bank', version: '1' })).rejects.toThrow();
     await expect(
       p.unwrap('local:other', wrapped, { purpose: 'tin', version: '1' }),
     ).rejects.toThrow(/Unknown KEK/);
-    expect(await p.unwrap('local:test', wrapped, { version: '1', purpose: 'tin' })).toEqual(
+    expect(await p.unwrap(p.kekId, wrapped, { version: '1', purpose: 'tin' })).toEqual(
       Buffer.alloc(32, 7),
     );
   });

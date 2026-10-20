@@ -39,7 +39,8 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['../*/!(index)*', '../../modules/*/*'],
+              // ../<other-module>/<anything but index.js>  (not ../../ shared infra/common)
+              regex: '^\\.\\./(?!\\.\\.)[^/]+/(?!index\\.js$)[^/]+',
               message:
                 'Import other modules only through their public index.ts (service interface).',
             },
