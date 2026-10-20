@@ -12,3 +12,4 @@ coverage/
 *.tfstate
 *.tfstate.*
 .DS_Store
+dump.rdb

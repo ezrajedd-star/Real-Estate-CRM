@@ -1,11 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": ".",
     "outDir": "dist",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "declaration": false
+    "declaration": false,
+    "noEmit": true
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "../worker/test/s3rver.d.ts"]
 }

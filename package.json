@@ -17,7 +17,8 @@
     "infra:up": "docker compose -f infra/docker/compose.yml up -d",
     "infra:down": "docker compose -f infra/docker/compose.yml down",
     "db:migrate": "pnpm --filter @crm/db migrate",
-    "db:seed": "pnpm --filter @crm/db seed"
+    "db:seed": "pnpm --filter @crm/db seed",
+    "db:reset:local": "bash infra/scripts/db-reset-local.sh"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
